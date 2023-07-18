@@ -7,17 +7,17 @@
         <button @click="showScore">Placar</button>
         <button @click="endGame">Encerrar jogo</button>
       </div>
-      <SpaceObject id="spaceship" class="spaceship" :data="spaceField.ship" resolution="2" v-if="!menu"/>
+      <SpaceObject id="spaceship" class="spaceship" :data="spaceField.ship" resolution="2"/>
 
-      <SpaceObject class="asteroid" :data="asteroid" resolution="2" v-if="!menu"
+      <SpaceObject class="asteroid" :data="asteroid" resolution="2"
                   :key="asteroid.center"
                   v-for="asteroid in spaceField.asteroids" />
 
-      <SpaceObject class="missile" :data="missile" resolution="2" v-if="!menu"
+      <SpaceObject class="missile" :data="missile" resolution="2"
                   :key="missile.center"
                   v-for="missile in spaceField.missiles" />
 
-      <SpaceObject class="explosion" :data="explosion" resolution="2" v-if="!menu"
+      <SpaceObject class="explosion" :data="explosion" resolution="2"
                   :key="explosion.center"
                   v-for="explosion in spaceField.explosions" />
     </div>
@@ -25,7 +25,7 @@
 </template>
 
 <script setup>
-let menu = true;
+let menu = 1;
 let intervalId = null;
 const {
   data: spaceField,
@@ -49,17 +49,11 @@ onMounted(() => {
     if (command === undefined) return;
 
     if(command === "PAUSE_GAME"){
-      // O jogo é retomado/pausado quando a tecla "esc" é apertada
-      menu = !menu;
-
-      console.log(menu);
-      if(menu){
-        clearInterval(intervalId);
-      } else {
-        intervalId = window.setInterval(updateSpaceField, 1000);
-      }
+      // O jogo é pausado quando a tecla "esc" é apertada
+      menu = 1;
+      clearInterval(intervalId);
     }
-    if(!menu){
+    else if(menu === 0 && command !== "PAUSE_GAME"){
       console.log(`Triggering command: ${command}`);
       await $post("/ship/commands", { command });
     }
@@ -68,8 +62,8 @@ onMounted(() => {
 function startGame() {
   // Estou considerando que iniciar o jogo é apenas continuar, a não ser que a pessoa clique em encerrar antes
   console.log("Iniciando o jogo"); 
-  menu = false;
-  intervalId = window.setInterval(updateSpaceField, 1000);
+  menu = 0;
+  intervalId = window.setInterval(updateSpaceField, 20);
 }
 
 async function endGame() {
@@ -79,9 +73,9 @@ async function endGame() {
   await $post("/ship/commands", { command });
 }
 
-function showScore() {
+async function showScore() {
   console.log("Exibindo o placar");
-  // Exibir placar
+  await navigateTo('/leaderboard')
 }
 
 </script>
