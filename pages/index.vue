@@ -2,17 +2,22 @@
   <div id="canvas">
     <div id="deep-space" />
     <div id="space-field">
-      <SpaceObject id="spaceship" class="spaceship" :data="spaceField.ship" resolution="2" />
+      <div v-show="menu" class="myMenu">
+        <button @click="startGame">Iniciar</button>
+        <button @click="showScore">Placar</button>
+        <button @click="endGame">Encerrar jogo</button>
+      </div>
+      <SpaceObject id="spaceship" class="spaceship" :data="spaceField.ship" resolution="2" v-if="!menu"/>
 
-      <SpaceObject class="asteroid" :data="asteroid" resolution="2"
+      <SpaceObject class="asteroid" :data="asteroid" resolution="2" v-if="!menu"
                   :key="asteroid.center"
                   v-for="asteroid in spaceField.asteroids" />
 
-      <SpaceObject class="missile" :data="missile" resolution="2"
+      <SpaceObject class="missile" :data="missile" resolution="2" v-if="!menu"
                   :key="missile.center"
                   v-for="missile in spaceField.missiles" />
 
-      <SpaceObject class="explosion" :data="explosion" resolution="2"
+      <SpaceObject class="explosion" :data="explosion" resolution="2" v-if="!menu"
                   :key="explosion.center"
                   v-for="explosion in spaceField.explosions" />
     </div>
@@ -20,6 +25,8 @@
 </template>
 
 <script setup>
+let menu = true;
+let intervalId = null;
 const {
   data: spaceField,
   refresh: updateSpaceField
@@ -41,12 +48,42 @@ onMounted(() => {
     // Ignore if invalid key was pressed
     if (command === undefined) return;
 
-    console.log(`Triggering command: ${command}`);
-    await $post("/ship/commands", { command })
-  });
+    if(command === "PAUSE_GAME"){
+      // O jogo é retomado/pausado quando a tecla "esc" é apertada
+      menu = !menu;
 
-  window.setInterval(updateSpaceField, 1000);
+      console.log(menu);
+      if(menu){
+        clearInterval(intervalId);
+      } else {
+        intervalId = window.setInterval(updateSpaceField, 1000);
+      }
+    }
+    if(!menu){
+      console.log(`Triggering command: ${command}`);
+      await $post("/ship/commands", { command });
+    }
+  });
 })
+function startGame() {
+  // Estou considerando que iniciar o jogo é apenas continuar, a não ser que a pessoa clique em encerrar antes
+  console.log("Iniciando o jogo"); 
+  menu = false;
+  intervalId = window.setInterval(updateSpaceField, 1000);
+}
+
+async function endGame() {
+  console.log("Encerrando o jogo");
+  // No meu EP2 eu considerei que meu jogo é encerrado quando o comando de pausar é executado
+  const command = "PAUSE_GAME";
+  await $post("/ship/commands", { command });
+}
+
+function showScore() {
+  console.log("Exibindo o placar");
+  // Exibir placar
+}
+
 </script>
 
 <style>
@@ -111,5 +148,21 @@ onMounted(() => {
 
 .explosion {
   background-image: url("~/assets/explosion.png");
+}
+.myMenu {
+  position: absolute;
+  opacity: 80%;
+  padding: 2%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: white;
+}
+
+.myMenu button {
+  margin-bottom: 10px;
 }
 </style>
